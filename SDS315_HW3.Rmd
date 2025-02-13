@@ -1,0 +1,283 @@
+---
+title: "Homework 3"
+author: "Donghwan Won"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+**EID:** dw34446
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(mosaic)
+
+gasprices <- read.csv('C:/Users/namyu/OneDrive/바탕 화면/SDS315/HW3/gasprices.csv')
+sclass <- read.csv('C:/Users/namyu/OneDrive/바탕 화면/SDS315/HW3/sclass.csv')
+nbc_pilotsurvey <- read.csv('C:/Users/namyu/OneDrive/바탕 화면/SDS315/HW3/nbc_pilotsurvey.csv')
+ebay <- read.csv('C:/Users/namyu/OneDrive/바탕 화면/SDS315/HW3/ebay.csv')
+
+```
+
+
+## 1.Theory A
+
+```{r cars}
+mean(gasprices$Price ~ gasprices$Competitors)
+diffmean(gasprices$Price ~ gasprices$Competitors)
+boot_gasprices_competitors = do(10000)*diffmean(Price ~ Competitors, data=mosaic::resample(gasprices))
+
+ggplot(boot_gasprices_competitors) + 
+  geom_histogram(aes(x=diffmean)) +
+  labs(
+  title = "Gas stations charge more if they lack direct competition in sight",
+  y = "Count", x = "Diff mean")
+
+confint(boot_gasprices_competitors, level = 0.95)
+
+```
+Claim: Gas price is higher when they are no competitors in sight.
+
+Evidence: I found out the evidence the mean price of gas for if there are competitors around the gas stations. If there are competitors around, gas price is around $1.8524. If there are competitors aren't around, gas price is around 1.8788. We calculated between mean price difference between gas stations with and without direct competition. The 95% confidence interval is lower bound is -0.0545 and 0.0081.Since the confidence interval includes 0, there is no statistically significant evidence that gas stations without competition charge higher prices.
+
+Conclusion: The data does not support that gas stations charge more when they lack direct competition. 
+
+\newpage 
+
+## 1.Theory B
+```{r}
+avg_prices_by_zipcode <- gasprices %>%
+  group_by(Zipcode, Income) %>%
+  summarise(avg_price = mean(Price))
+
+
+boot_gasprices_zipcode = do(10000)*cor(avg_price ~ Income, data=mosaic::resample(avg_prices_by_zipcode))
+
+ggplot(boot_gasprices_zipcode) + 
+  geom_histogram(aes(x=cor))  +
+  labs(
+  title = "Bootstrap Distribution of Correlation Between Income and Gas Prices",
+  y = "Count", x = "Correlation Coefficient")
+
+confint(boot_gasprices_zipcode, level = 0.95)
+
+```
+Claim: The richer the area, the higher the gas prices
+
+Evidence: The 95% confidence interval for the correlation between income and gas price is from -0.045 to 0.819. This interval includes 0 in confidence interval, and this implies that there is no significant correlation at all between these two. 
+
+Conclusion: The data does not support richer area have higher gas prices. 
+\newpage 
+
+## 1.Theory C
+```{r}
+mean(gasprices$Price ~ gasprices$Stoplight)
+diffmean(gasprices$Price ~ gasprices$Stoplight)
+
+boot_gasprices_stoplight = do(10000)*diffmean(Price ~ Stoplight, data=mosaic::resample(gasprices))
+
+
+ggplot(boot_gasprices_stoplight) + 
+  geom_histogram(aes(x=diffmean))  +
+  labs(
+  title = "Gas stations at stoplights charge more",
+  y = "Count", x = "Diffmean")
+
+confint(boot_gasprices_stoplight, level = 0.95)
+
+```
+Claim: Gas price is higher when there are stoplight in front of the gas stations.
+
+Evidence: We found out the evidence the mean price of gas if there are stoplights in front of the gas stations. If there are stoplights in front of the gas station, gas price is around $1.863. If there aren't stoplights in front of the gas stations, gas price is around 1.866. We calculated between mean price difference between if there are stoplights in front of the gas stations or not. The 95% confidence interval is lower bound is -0.0382 and 0.0302.Since the confidence interval includes 0, there is no statistically signifiant evidence that gas stations at stoplights charge higher gas price.
+
+Conclusion: The data does not support that gas stations charge more when gas stations at stoplights. 
+
+\newpage 
+
+## 1. Theory D
+```{r}
+mean(gasprices$Price ~ gasprices$Highway)
+diffmean(gasprices$Price ~ gasprices$Highway)
+
+boot_gasprices_highway = do(10000)*diffmean(Price ~ Highway, data=mosaic::resample(gasprices))
+
+
+ggplot(boot_gasprices_highway) + 
+  geom_histogram(aes(x=diffmean))  +
+  labs(
+  title = "Gas stations with direct highway access charge more",
+  y = "Count", x = "Diffmean")
+
+confint(boot_gasprices_highway, level = 0.95)
+
+```
+Claim: Gas stations with direct highway access charge higher gas prices. 
+
+Evidence: We found out the evidence of the mean price of gas if gas stations are direct with highway access. If there are direct with highway access, gas price is around $1.900. If there aren't direct with highway access, gas price is around 1.854. We calculated between mean price difference between if there are stoplights in front of the gas stations or not. The 95% confidence interval is lower bound is 0.00943 and 0.0814.Since the confidence interval does not include 0, there is statistically signifiant evidence that gas stations at stoplights charge higher gas price.
+
+Conclusion: The data supports the theory that highway-accessible gas stations charge higher prices 
+
+\newpage 
+
+## 1. Theory E
+```{r}
+gasprices <- gasprices %>%
+mutate(shell_group = ifelse(Brand == "Shell", "Shell", "Non-Shell"))
+shell_diff <- diffmean(Price ~ shell_group, data = gasprices)
+boot_diff_shell <- do(10000) * diffmean(Price ~ shell_group, data = mosaic::resample(gasprices))
+
+
+ggplot(boot_diff_shell) + 
+  geom_histogram(aes(x=diffmean)) + 
+  labs(
+  title = "Shell charges more than all other non-shell brands",
+  y = "Count", x = "Diffmean")
+
+confint(boot_diff_shell, level = 0.95)
+
+
+```
+Claim: Shell gas stations tend to charge more for gasoline compared to all other non-shell brands
+
+Evidence: The 95% confidence interval for this difference was lower bound is -0.00981 and upper bound is 0.0649. This includes zero. This suggests that observed mean price difference is not statistically significant. 
+
+Conclusion: The data does not support that Shell charges more than all other non-shell brands. 
+
+\newpage 
+
+## 2. Part A
+```{r}
+sclass_part_a <- sclass %>%
+  filter(year == 2011, trim == "63 AMG")
+mean(~mileage, data=sclass_part_a)
+boot_sclass_avgmileage = do(10000)*mean( ~ mileage, data=mosaic::resample(sclass_part_a))
+
+ggplot(boot_sclass_avgmileage) + 
+  geom_histogram(aes(x=mean)) + 
+  labs(
+  title = "Bootstrap Distribution of Average Mileage for 2011 S-Class 63 AMGs",
+  y = "Count", x = "Average Mileage")
+
+
+confint(boot_sclass_avgmileage, level = 0.95)
+
+```
+\newpage 
+
+## 2. Part B
+```{r}
+sclass_part_b <- sclass %>%
+filter(year == 2014, trim == "550")  %>%
+mutate(isBlack = ifelse(color  == "Black", TRUE, FALSE))
+
+boot_sclass_black = do(10000)*prop( ~ isBlack, data=mosaic::resample(sclass_part_b))
+
+boot_results <- boot_sclass_black$prop
+
+ggplot(boot_sclass_black) + 
+  geom_histogram(aes(x=boot_results)) + 
+  labs(
+  title = "Bootstrap Distribution of Proportion of Black 2014 S-Class 550 Cars",
+  y = "Count", x = "Proportion of Black Cars")
+
+
+confint(boot_sclass_black, level = 0.95)
+
+```
+\newpage 
+
+## 3. Part A
+```{r}
+nbc_ed <- nbc_pilotsurvey %>%
+filter(Show %in% c("Living with Ed", "My Name is Earl"))
+mean(~Viewer, data=nbc_ed)
+boot_nbc_ed = do(10000)*diffmean(Q1_Happy ~ Show, data=mosaic::resample(nbc_ed))
+
+ggplot(boot_nbc_ed) + 
+  geom_histogram(aes(x=diffmean))
+
+confint(boot_nbc_ed, level = 0.95)
+
+```
+
+Question: We want to know whether the show 'Living with Ed' or 'My name is Earl' makes viewers happier.
+
+Approach: We filtered the dataset to only include 'Living with Ed' and 'My name is Earl'. Then, we calculated the difference in mean Q1_Happy scores between the two shows and then used bootstrap resampling to find 95% confidence interval.
+
+Results:We found out 95% confidence interval. Lower bound is -0.395 and upper bound is 0.0988.  Since this confidence interval includes 0, there is no statistically significant difference in happiness ratings between the two shows. 
+
+Conclusion: We can not conclude that 'Living with Ed' or 'My name is Earl' consistently makes viewers happier. There is no strong evidence to suggest that one show is consistently better at making viewers happy than other. 
+\newpage 
+
+## 3. Part B
+```{r}
+nbc_b <- nbc_pilotsurvey %>%
+filter(Show %in% c("The Biggest Loser", "The Apprentice: Los Angeles"))
+mean(~Viewer, data=nbc_b)
+boot_nbc_edb = do(10000)*diffmean(Q1_Annoyed ~ Show, data=mosaic::resample(nbc_b))
+
+ggplot(boot_nbc_edb) + 
+  geom_histogram(aes(x=diffmean))
+
+
+confint(boot_nbc_ed, level = 0.95)
+
+```
+Question: We want to determine whether 'The Biggest Loser' or 'The Apprentice: Los Angeles' made viewers feel more annoyed.
+
+Approach: We filtered the dataset to include only viewer responses for 'The Biggest Loser' and 'The Apprentice: Los Angeles'. We then calculated in mean Q1_Annoyed scores between the two shows and used bootstrap resampling to make a 95% confidence interval. 
+
+Results: We found the 95% confidence interval. Lower bound is -0.3953 and upper bound is 0.0988. Since this confidence interval includes 0, there is no statistically significant difference in annoyance ratings between the two shows. 
+
+Conclusion: We can not conclude that 'The Biggest Loser' or 'The Apprentice:Los Angeles' made viewers feel more annoyed. There is no strong evidence to suggest that one is more annoying than the other. 
+\newpage 
+
+##3. Part C
+```{r}
+
+
+nbc_c <- nbc_pilotsurvey %>%
+mutate(confused = ifelse(Q2_Confusing >= 4, TRUE, FALSE)) %>%
+filter(Show == "Dancing with the Stars") 
+
+boot_nbc_edc <- do(10000) * prop(~confused, data = mosaic::resample(nbc_c))
+
+confint(boot_nbc_edc, level = 0.95)
+
+```
+Question: We are trying to determine how many viewers felt that the 'Dancing with the Stars' was confusing.
+
+Approach:We created a new variable 'Confused' where True is when Confusing is 4 or greater than 4, and False is when Confusing is less than 4. We filtered out show 'Dancing with th Starts'. Then we did bootstrap resampling to estimate the proportion of viewers who found the show confusing. Then we calculated the confidence interval for the proportion of viewers who found the show confusing. 
+
+Results: The 95% confidence interval for the proportion viewers is lower bound is 0.0387 and upper bound is 0.1160. Since this confidence interval does not include 0, there is  statistically significant.
+
+Conclusion: We cannot conclude that 'Dancing with the Stars' made viewers feel significantly more confused. While the 95% confidence interval for the proportion of confused viewers is between 0.0387 and 0.1160, the proportion is relatively low and not large enough to suggest a major issue.
+
+
+\newpage 
+
+##4. 
+
+```{r}
+
+ebay_1 <- ebay %>%
+mutate(rev_ratio = rev_after / rev_before) %>%
+mutate(group = ifelse(adwords_pause == 0, "Control", "Treatment"))
+obs_diff <- diffmean(rev_ratio ~ group, data = ebay_1)
+ebay_boot_diffs <- do(10000) * diffmean(rev_ratio ~ group, data = mosaic::resample(ebay_1))
+
+ggplot(ebay_boot_diffs) + 
+  geom_histogram(aes(x=diffmean))
+
+confint(ebay_boot_diffs, level = 0.95)
+
+
+```
+Question: We want to know whether Ebay's paid advertising on Google's search platform resulted in higher revenue compared to a control group where the ads were paused. We also want to know if the revenue ratio is lower in the treatment group compared to the control group. 
+
+Approach: We used bootstrap method with 10000 tries to estimate the difference in mean revenue ratios between the treatment and control groups. 
+
+Results: We used 10000 bootstrap resamples. We found out that 95% confidence interval for the difference in mean revenue ration is lower bound is -0.0905 and upper bound is -0.01332. This negative difference suggests that pausing paid ads is associated with lower revenue ratio when ads are paused.
+
+Conclusion:This result suggests that Ebay's paid advertising on Google's search platform does drive higher revenue. Ebay's decision to invest in Google AdWords advertising seems to have been beneficial in increasing revenue.
